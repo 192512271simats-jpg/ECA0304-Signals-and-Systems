@@ -1,0 +1,52 @@
+% Experiment 19: Discrete-Time LTI System, FIR/IIR Filters and Frequency Response
+clc; clear; close all;
+Fs = 1000; % Sampling frequency (Hz)
+t = 0:1/Fs:1-1/Fs;
+x = sin(2*pi*50*t) + 0.5*sin(2*pi*250*t); % Desired 50 Hz + unwanted 250 Hz
+% FIR low-pass filter: order 40, cutoff 100 Hz
+Nfir = 40;
+bFIR = fir1(Nfir,100/(Fs/2),'low',hamming(Nfir+1));
+aFIR = 1;
+yFIR = filter(bFIR,aFIR,x); % Direct-form FIR realization
+% IIR Butterworth low-pass filter: order 4, cutoff 100 Hz
+[ bIIR, aIIR ] = butter(4,100/(Fs/2),'low');
+yIIR = filter(bIIR,aIIR,x); % Direct-form IIR realization
+% Cascade-form realization of the IIR filter
+[sos,g] = tf2sos(bIIR,aIIR);
+yIIRcascade = g*sosfilt(sos,x);
+realizationError = max(abs(yIIR-yIIRcascade));
+% Impulse responses and frequency responses
+imp = [1 zeros(1,199)];
+hFIR = filter(bFIR,aFIR,imp);
+
+hIIR = filter(bIIR,aIIR,imp);
+[HFIR,f] = freqz(bFIR,aFIR,1024,Fs);
+[HIIR,~] = freqz(bIIR,aIIR,1024,Fs);
+% Numerical checks
+fprintf('Maximum direct-form/cascade IIR difference = %.3e\n',realizationError);
+fprintf('FIR output RMS = %.4f\n',sqrt(mean(yFIR.^2)));
+fprintf('IIR output RMS = %.4f\n',sqrt(mean(yIIR.^2)));
+figure('Name','Experiment 19: FIR/IIR system analysis');
+subplot(2,2,1);
+plot(t,x,'Color',[0.3 0.3 0.3]); hold on;
+plot(t,yFIR,'b'); plot(t,yIIR,'r');
+xlim([0 0.12]); grid on;
+xlabel('Time (s)'); ylabel('Amplitude');
+title('Input and Filtered Outputs');
+legend('Input','FIR output','IIR output');
+subplot(2,2,2);
+plot(f,20*log10(max(abs(HFIR),1e-6)),'b'); hold on;
+plot(f,20*log10(max(abs(HIIR),1e-6)),'r');
+xline(100,'k--','Cutoff 100 Hz');
+xlim([0 Fs/2]); ylim([-100 5]); grid on;
+xlabel('Frequency (Hz)'); ylabel('Magnitude (dB)');
+title('FIR and IIR Magnitude Responses');
+legend('FIR order 40','IIR Butterworth order 4','Location','best');
+subplot(2,2,3);
+stem(0:length(hFIR)-1,hFIR,'filled'); grid on;
+xlabel('Sample index n'); ylabel('h_{FIR}[n]');
+title('FIR Impulse Response');
+subplot(2,2,4);
+stem(0:length(hIIR)-1,hIIR,'filled'); grid on;
+xlabel('Sample index n'); ylabel('h_{IIR}[n]');
+title('IIR Impulse Response');
