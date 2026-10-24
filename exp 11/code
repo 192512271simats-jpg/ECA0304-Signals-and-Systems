@@ -1,0 +1,102 @@
+clc;
+clear;
+close all;
+
+% Experiment 11: Frequency Response, Poles-Zeros and Stability
+% H(s) = (s + 2)/(s^2 + 4s + 5)
+
+num = [1 2];
+den = [1 4 5];
+
+sys = tf(num, den);
+
+disp('Transfer Function:');
+disp(sys);
+
+disp('Poles:');
+disp(pole(sys));
+
+disp('Zeros:');
+disp(zero(sys));
+
+% Time vector and frequency vector
+t = 0:0.01:8;
+w = logspace(-2, 2, 700);
+
+% Calculate frequency response
+[mag, phase, wout] = bode(sys, w);
+mag = squeeze(mag);
+phase = squeeze(phase);
+
+% Create one figure with 3 rows and 2 columns
+figure('Name','Experiment 11 - System Analysis');
+
+% Plot 1: Pole-Zero Map
+subplot(3,2,1);
+pzmap(sys);
+grid on;
+title('Pole-Zero Map');
+
+% Plot 2: Impulse Response
+subplot(3,2,2);
+impulse(sys, t);
+grid on;
+title('Impulse Response');
+xlabel('Time (s)');
+ylabel('h(t)');
+
+% Plot 3: Step Response
+subplot(3,2,3);
+step(sys, t);
+grid on;
+title('Step Response');
+xlabel('Time (s)');
+ylabel('y(t)');
+
+% Plot 4: Magnitude Frequency Response
+subplot(3,2,4);
+semilogx(wout, 20*log10(mag), 'LineWidth', 1.4);
+grid on;
+title('Magnitude Frequency Response');
+xlabel('Frequency (rad/s)');
+ylabel('Magnitude (dB)');
+
+% Plot 5: Phase Frequency Response
+subplot(3,2,5);
+semilogx(wout, phase, 'LineWidth', 1.4);
+grid on;
+title('Phase Frequency Response');
+xlabel('Frequency (rad/s)');
+ylabel('Phase (degrees)');
+
+% Plot 6: System Information
+subplot(3,2,6);
+axis off;
+
+p = pole(sys);
+z = zero(sys);
+
+text(0.05, 0.85, 'System Information', ...
+    'FontSize', 12, 'FontWeight', 'bold');
+
+text(0.05, 0.68, sprintf('Zero: %.2f', z(1)));
+text(0.05, 0.52, sprintf('Pole 1: %.2f + %.2fi', ...
+    real(p(1)), imag(p(1))));
+text(0.05, 0.36, sprintf('Pole 2: %.2f + %.2fi', ...
+    real(p(2)), imag(p(2))));
+
+if all(real(p) < 0)
+    stability = 'BIBO Stable';
+else
+    stability = 'Not Asymptotically Stable';
+end
+
+text(0.05, 0.18, ['Stability: ' stability], ...
+    'FontSize', 10, 'FontWeight', 'bold');
+
+% Display stability in Command Window
+if all(real(p) < 0)
+    disp('The system is BIBO stable.');
+else
+    disp('The system is not asymptotically stable.');
+end
