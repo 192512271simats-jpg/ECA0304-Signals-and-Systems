@@ -1,0 +1,208 @@
+clc;
+clear;
+close all;
+
+% Experiment 17: Fast Fourier Transform Using DIT and DIF Algorithms
+
+%% 1. Input Signal
+N = 16;
+x = rand(1, N);
+
+disp('Input Signal:');
+disp(x);
+
+%% 2. Built-in FFT
+X_builtin = fft(x);
+
+%% 3. Radix-2 DIT FFT
+X_DIT = dit_fft(x);
+
+%% 4. Radix-2 DIF FFT
+X_DIF = dif_fft(x);
+
+%% 5. Verify Results and Numerical Errors
+error_DIT = max(abs(X_builtin - X_DIT));
+error_DIF = max(abs(X_builtin - X_DIF));
+
+fprintf('\nMaximum DIT FFT Error = %.10e\n', error_DIT);
+fprintf('Maximum DIF FFT Error = %.10e\n', error_DIF);
+
+%% 6. Plot Magnitude and Phase
+figure;
+
+subplot(2,1,1);
+stem(0:N-1, abs(X_builtin), 'o');
+title('|FFT| (built-in)');
+xlabel('Frequency Index');
+ylabel('Magnitude');
+grid on;
+
+subplot(2,1,2);
+stem(0:N-1, angle(X_builtin), 'o');
+title('Phase (built-in)');
+xlabel('Frequency Index');
+ylabel('Phase (radians)');
+grid on;
+
+%% 7. Execution Time Comparison
+Ns = [16 32 64 128 256 512 1024 2048];
+
+t_DFT = zeros(size(Ns));
+t_FFT = zeros(size(Ns));
+t_builtin = zeros(size(Ns));
+
+for k = 1:length(Ns)
+    n = Ns(k);
+    signal = rand(1,n);
+
+    % Direct DFT using matrix multiplication
+    m = 0:n-1;
+    W = exp(-1j*2*pi/n * (m.' * m));
+
+    tic;
+    Y = W * signal.';
+    t_DFT(k) = toc;
+
+    % Custom Radix-2 DIT FFT
+    tic;
+    Y_DIT = dit_fft(signal);
+    t_FFT(k) = toc;
+
+    % MATLAB built-in FFT
+    tic;
+    Y_builtin = fft(signal);
+    t_builtin(k) = toc;
+end
+
+figure;
+loglog(Ns, t_DFT, '-o', 'LineWidth', 1.2);
+hold on;
+loglog(Ns, t_FFT, '-s', 'LineWidth', 1.2);
+loglog(Ns, t_builtin, '-^', 'LineWidth', 1.2);
+title('Direct DFT vs FFT: Execution Time');
+xlabel('N');
+ylabel('Execution time (s)');
+legend('Direct DFT (O(N^2))', ...
+       'Custom Radix-2 DIT-FFT', ...
+       'Built-in fft()', 'Location', 'northwest');
+grid on;
+hold off;
+
+%% 8. Computational Effort Comparison
+DFT_mult = Ns.^2;
+FFT_mult = (Ns/2) .* log2(Ns);
+
+figure;
+loglog(Ns, DFT_mult, '-o', 'LineWidth', 1.2);
+hold on;
+loglog(Ns, FFT_mult, '-s', 'LineWidth', 1.2);
+title('Computational Effort: DFT vs FFT');
+xlabel('N');
+ylabel('Complex Multiplications');
+legend('Direct DFT: N^2', ...
+       'Radix-2 FFT: (N/2)log_2(N)', ...
+       'Location', 'northwest');
+grid on;
+hold off;
+
+%% 9. Radix-2 DIT FFT Function
+function X = dit_fft(x)
+
+    x = x(:).';
+    N = length(x);
+
+    if N < 2 || bitand(N, N-1) ~= 0
+        if N == 1
+            X = x;
+            return;
+        end
+        error('Input length must be a power of 2.');
+    end
+
+    % Bit-reversal permutation
+    bits = log2(N);
+    indices = zeros(1,N);
+
+    for k = 0:N-1
+        r = 0;
+        temp = k;
+
+        for b = 1:bits
+            r = 2*r + mod(temp,2);
+            temp = floor(temp/2);
+        end
+
+        indices(k+1) = r+1;
+    end
+
+    X = x(indices);
+
+    % Iterative butterfly operations
+    for s = 1:bits
+        L = 2^s;
+        halfL = L/2;
+        W = exp(-1j*2*pi*(0:halfL-1)/L);
+
+        for start = 1:L:N
+            for j = 0:halfL-1
+                a = X(start+j);
+                b = W(j+1)*X(start+j+halfL);
+
+                X(start+j) = a+b;
+                X(start+j+halfL) = a-b;
+            end
+        end
+    end
+end
+
+%% 10. Radix-2 DIF FFT Function
+function X = dif_fft(x)
+
+    x = x(:).';
+    N = length(x);
+
+    if N < 2 || bitand(N, N-1) ~= 0
+        if N == 1
+            X = x;
+            return;
+        end
+        error('Input length must be a power of 2.');
+    end
+
+    bits = log2(N);
+    X = x;
+
+    % Decimation-in-Frequency butterfly operations
+    for s = bits:-1:1
+        L = 2^s;
+        halfL = L/2;
+        W = exp(-1j*2*pi*(0:halfL-1)/L);
+
+        for start = 1:L:N
+            for j = 0:halfL-1
+                a = X(start+j);
+                b = X(start+j+halfL);
+
+                X(start+j) = a+b;
+                X(start+j+halfL) = (a-b)*W(j+1);
+            end
+        end
+    end
+
+    % Reorder bit-reversed output into natural order
+    indices = zeros(1,N);
+
+    for k = 0:N-1
+        r = 0;
+        temp = k;
+
+        for b = 1:bits
+            r = 2*r + mod(temp,2);
+            temp = floor(temp/2);
+        end
+
+        indices(k+1) = r+1;
+    end
+
+    X = X(indices);
+end
