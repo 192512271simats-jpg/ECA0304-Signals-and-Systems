@@ -1,0 +1,43 @@
+clc; clear; close all;
+syms s t
+% Define the stable continuous-time LTI system
+num = [1 2];
+den = [1 4 5];
+sys = tf(num, den);
+% Laplace-domain analysis for x(t) = exp(-t)u(t)
+Hs = (s + 2)/(s^2 + 4*s + 5);
+Xs = 1/(s + 1);
+Ys = simplify(Hs*Xs);
+yt = simplify(ilaplace(Ys, s, t));
+disp('Y(s) ='); pretty(Ys);
+disp('y(t) ='); pretty(yt);
+% Pole-zero map
+figure; pzmap(sys); grid on;
+title('Pole-Zero Map');
+% Fourier/frequency response (Bode plot)
+figure; bode(sys); grid on;
+title('Frequency Response H(jw)');
+% Compare input and simulated output in the time domain
+tt = 0:0.001:15;
+x = exp(-tt);
+y = lsim(sys, x, tt);
+figure; plot(tt, x, '--', 'LineWidth', 1.2); hold on;
+plot(tt, y, 'LineWidth', 1.4); grid on;
+xlabel('Time (s)'); ylabel('Amplitude');
+legend('Input x(t)', 'Output y(t)', 'Location', 'best');
+title('Exponential Input-Output Response');
+% Compare sinusoidal gain and phase at a test frequency
+w0 = 1.5; [mag, phase] = bode(sys, w0);
+mag = squeeze(mag); phase = squeeze(phase);
+fprintf('|H(jw0)| = %.6f
+', mag);
+fprintf('Phase H(jw0) = %.4f degrees
+', phase);
+% Stability check from pole locations
+p = pole(sys);
+disp('Poles:'); disp(p);
+if all(real(p) < 0)
+disp('System is asymptotically stable.');
+else
+disp('System is not asymptotically stable.');
+end
