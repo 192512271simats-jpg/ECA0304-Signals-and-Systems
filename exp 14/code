@@ -1,0 +1,32 @@
+clc; clear; close all;
+fs_hi = 50000; % very high rate to emulate CT signal
+t = 0:1/fs_hi:0.05;
+f1 = 800; f2 = 1900; % two-tone test signal, Hz
+x = cos(2*pi*f1*t) + cos(2*pi*f2*t);
+fs = 1200; % chosen ADC sampling rate (< 2*f2 -> aliasing expected)
+n = 0:1/fs:0.05;
+xn = cos(2*pi*f1*n) + cos(2*pi*f2*n);% direct sampling, no anti-aliasing filter
+N = length(xn); Xf = fftshift(fft(xn));
+faxis = (-N/2:N/2-1)*(fs/N);
+figure; plot(faxis, abs(Xf)); xlabel('Frequency (Hz)'); ylabel('|X(f)|');
+title('Spectrum of Sampled Signal WITHOUT Anti-Aliasing Filter (fs=1200 Hz)'); grid on;
+% Theoretical aliased frequency of the 1900 Hz tone
+k = round(f2/fs);
+f_alias = abs(f2 - k*fs);
+fprintf('Theoretical aliased frequency of %d Hz tone at fs=%d Hz -> %.1f Hz\n', f2, fs,
+f_alias);
+%% Anti-aliasing filter design (Butterworth LPF)
+fc = 0.45*fs; order = 6; % cut-off below Nyquist (fs/2 = 600 Hz)
+[b,a] = butter(order, fc/(fs_hi/2), 'low');
+x_filt = filtfilt(b,a,x);
+xn_filt = interp1(t, x_filt, n, 'spline'); % sample the FILTERED signal at fs
+Xf_filt = fftshift(fft(xn_filt));
+figure; plot(faxis, abs(Xf_filt)); xlabel('Frequency (Hz)'); ylabel('|X(f)|');
+
+title('Spectrum AFTER Anti-Aliasing Filter, then Sampled at fs=1200 Hz'); grid on;
+[H,F] = freqz(b,a,4096,fs_hi);
+atten_f2_dB = 20*log10(abs(H(round(f2/(fs_hi/2)*length(F)))));
+fprintf('Filter cut-off fc = %.1f Hz, order = %d\n', fc, order);
+fprintf('Attenuation at %d Hz (before folding) = %.2f dB\n', f2, atten_f2_dB);
+figure; plot(F,20*log10(abs(H))); xlabel('Frequency (Hz)'); ylabel('Magnitude (dB)');
+title('Anti-Aliasing Butterworth Filter Response'); grid on; xlim([0 fs_hi/4]);
