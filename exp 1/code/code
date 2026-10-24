@@ -1,0 +1,36 @@
+objective 1:
+
+% Experiment 1: Generation of Continuous-Time Signals
+clc; clear; close all;
+t = -1:0.001:1;
+A = 2; f0 = 5; a = 1;
+imp = double(abs(t)<0.0005);
+step = double(t>=0);
+ramp = t.*step;
+expSig = exp(-a*t).*step;
+sinSig = A*sin(2*pi*f0*t);
+figure;
+subplot(3,2,1); plot(t,imp); grid on; title('Unit Impulse'); xlabel('t'); ylabel('Amplitude');
+subplot(3,2,2); plot(t,step); grid on; title('Unit Step'); xlabel('t'); ylabel('Amplitude');
+subplot(3,2,3); plot(t,ramp); grid on; title('Ramp'); xlabel('t'); ylabel('Amplitude');
+subplot(3,2,4); plot(t,expSig); grid on; title('Exponential'); xlabel('t'); ylabel('Amplitude');
+subplot(3,2,5); plot(t,sinSig); grid on; title('Sinusoidal'); xlabel('t'); ylabel('Amplitude');
+
+objective 2:
+
+% Experiment 2: Generation of Discrete-Time Signals
+clc; clear; close all;
+n = -20:20;
+A = 2; f0 = 0.1; a = 0.1;
+imp = double(n==0);
+step = double(n>=0);
+ramp = n.*step;
+expSig = (0.8).^n .* step;
+sinSig = A*sin(2*pi*f0*n);
+figure;
+subplot(3,2,1); stem(n,imp,'filled'); grid on; title('Unit Impulse');
+subplot(3,2,2); stem(n,step,'filled'); grid on; title('Unit Step');
+subplot(3,2,3); stem(n,ramp,'filled'); grid on; title('Ramp');
+subplot(3,2,4); stem(n,expSig,'filled'); grid on; title('Exponential');
+subplot(3,2,5); stem(n,sinSig,'filled'); grid on; title('Discrete Sinusoid');
+xlabel('n');
