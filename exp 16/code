@@ -1,0 +1,69 @@
+%% Display graphs side by side with medium size and spacing
+
+figure('Name','Experiment 16 Output Graphs', ...
+       'NumberTitle','off', ...
+       'Color','w', ...
+       'Position',[100 50 1000 750]);
+
+tiledlayout(3,2, ...
+    'TileSpacing','compact', ...
+    'Padding','compact');
+
+% Graph 1: Input sequences
+nexttile;
+stem(0:length(x1)-1,x1,'b','filled');
+hold on;
+stem(0:length(x2)-1,x2,'r','filled');
+title('Input Sequences');
+xlabel('n');
+ylabel('Amplitude');
+legend('x_1[n]','x_2[n]');
+grid on;
+hold off;
+
+% Graph 2: Circular convolution
+nexttile;
+stem(0:N-1,y_circular,'b','filled');
+title('Circular Convolution');
+xlabel('n');
+ylabel('Amplitude');
+grid on;
+
+% Graph 3: Linear convolution
+nexttile;
+stem(0:length(y_linear)-1,y_linear,'b','filled');
+title('Linear Convolution');
+xlabel('n');
+ylabel('Amplitude');
+grid on;
+
+% Graph 4: Overlap-Add vs Direct Convolution
+nexttile;
+plot(idx,y_direct(idx),'b');
+hold on;
+plot(idx,y_ola(idx),'r--');
+title('Overlap-Add vs Direct');
+xlabel('Sample Index');
+ylabel('Amplitude');
+legend('Direct','Overlap-Add');
+grid on;
+hold off;
+
+% Graph 5: Absolute error
+nexttile;
+stem(0:length(error_ola)-1,error_ola, ...
+    'Marker','none');
+title('Absolute Error');
+xlabel('n');
+ylabel('|Error|');
+grid on;
+
+% Graph 6: Computational effort
+nexttile;
+bar([direct_mult,ola_mult]);
+set(gca,'XTickLabel',{'Direct','Overlap-Add'});
+title('Computational Effort');
+ylabel('Approx. Multiplications');
+grid on;
+
+sgtitle('Experiment 16: DFT and Convolution');
